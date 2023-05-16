@@ -17,7 +17,7 @@ A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS.
 
 **3.** *Keypair* com o nome ***mykp***.
 
-**4. (Caso queira testar a conexão por Workbench)** [MySqlWorkbench](https://www.mysql.com/products/workbench/) instalado em sua máquina.
+**Observação:** (Caso queira testar a conexão por Workbench) [MySqlWorkbench](https://www.mysql.com/products/workbench/) instalado em sua máquina.
 
 
 #### Tutorial da implementação
