@@ -12,8 +12,12 @@ A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS.
 #### Requisitos da implementação
 
 **1.** Conta [AWS](https://aws.amazon.com/pt/) e credenciais para instalação da infraestrutura.
+
 **2.** [Terraform](https://www.terraform.io/) instalado em sua máquina, essa é uma ferramenta de software de infraestrutura como código (IaC).
-**3.** [MySqlWorkbench](https://www.mysql.com/products/workbench/) instalado em sua máquina.
+
+**3.** *Keypair* com o nome ***mykp***.
+
+**4. (Caso queira testar a conexão por Workbench)** [MySqlWorkbench](https://www.mysql.com/products/workbench/) instalado em sua máquina.
 
 
 #### Tutorial da implementação
