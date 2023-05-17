@@ -318,7 +318,7 @@ output "port" {
 
 Feito tudo isso, basta rodar o comando abaixo e digitar *yes*:
 ```
-terraform apply
+terraform apply -var-file="secrets.tfvars"
 ```
 
 No terminal, deve ter aparecido algo como isto (a instalação da infraestrutura vai demorar em torno de 5 minutos):
