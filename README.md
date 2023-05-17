@@ -15,7 +15,11 @@ A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS.
 
 **2.** [Terraform](https://www.terraform.io/) instalado em sua máquina, essa é uma ferramenta de software de infraestrutura como código (IaC).
 
-**3.** *Keypair* com o nome ***mykp***.
+**3.** *Keypair* com o nome ***mykp***, pode ser gerada pelo seguinte comando:
+
+```
+ssh-keygen -t rsa -b 4096
+```
 
 **Observação:** (Caso queira testar a conexão por Workbench) [MySqlWorkbench](https://www.mysql.com/products/workbench/) instalado em sua máquina.
 
@@ -327,7 +331,9 @@ Guarde esse valores! Com eles nós iremos fazer nossa conexão com a base de dad
 
 Uma maneira alternativa para testarmos nossa conexão é fazer ssh para nossa EC2, e então nos conectarmos a base, para isso, basta rodar o seguinte comando no terminal:
 
+```
 ssh -i "mykp" ubuntu@$(terraform output -raw public_ip)
+```
 
 Feito isso, agora estamos em nossa EC2 a qual tem acesso ao banco de dados.
 
