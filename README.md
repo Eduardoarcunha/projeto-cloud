@@ -17,11 +17,13 @@ A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS, isso 
 
 **3.** *Keypair* com o nome ***mykp*** na pasta key-pair, pode ser gerada pelo seguinte comando:
 
-**4.** MySQL Client instalado para testarmos a conexão com a base.
-
 ```
 ssh-keygen -t rsa -b 4096
 ```
+
+**4.** MySQL Client instalado para testarmos a conexão com a base.
+
+
 
 **Observação:** (Caso queira testar a conexão pelo MySqlWorkbench) [este](https://www.mysql.com/products/workbench/) deve estar instalado em sua máquina.
 
