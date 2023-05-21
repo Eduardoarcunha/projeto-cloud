@@ -1,4 +1,4 @@
-# 7. EC2 security group
+# EC2 security group
 resource "aws_security_group" "rds_ec2_sg" {
   name        = "rds_ec2_sg"
   description = "Allow traffic to EC2"
@@ -42,7 +42,7 @@ resource "aws_security_group" "rds_ec2_sg" {
   }
 }
 
-#8. RDS security group
+# RDS security group
 resource "aws_security_group" "rds_db_sg" {
   name        = "rds_db_sg"
   description = "Allow traffic to RDS"

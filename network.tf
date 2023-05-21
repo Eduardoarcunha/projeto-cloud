@@ -1,4 +1,4 @@
-# 1. Creating VPC
+# Creating VPC
 resource "aws_vpc" "rds_vpc" {
   cidr_block = "10.0.0.0/16"
 
@@ -7,7 +7,7 @@ resource "aws_vpc" "rds_vpc" {
   }
 }
 
-# 2. Internet Gateway
+# Internet Gateway
 resource "aws_internet_gateway" "rds_igw" {
   vpc_id = aws_vpc.rds_vpc.id
 
@@ -16,7 +16,7 @@ resource "aws_internet_gateway" "rds_igw" {
   }
 }
 
-# 3. Public subnet
+# Public subnet
 resource "aws_subnet" "rds_subnet_public" {
   vpc_id            = aws_vpc.rds_vpc.id
   cidr_block        = "10.0.1.0/24"
@@ -27,7 +27,7 @@ resource "aws_subnet" "rds_subnet_public" {
   }
 }
 
-# 4. Private subnet
+# Private subnet
 resource "aws_subnet" "rds_subnet_private" {
   count = 2
   vpc_id            = aws_vpc.rds_vpc.id
@@ -39,7 +39,7 @@ resource "aws_subnet" "rds_subnet_private" {
   }
 }
 
-# 5. Public route table
+# Public route table
 resource "aws_route_table" "rds_route_public_table" {
   vpc_id = aws_vpc.rds_vpc.id
 
@@ -58,7 +58,7 @@ resource "aws_route_table_association" "rds_route_public_table_association" {
   route_table_id = aws_route_table.rds_route_public_table.id
 }
 
-# 6. Private route table
+# Private route table
 resource "aws_route_table" "rds_route_private_table" {
   vpc_id = aws_vpc.rds_vpc.id
 
@@ -73,7 +73,7 @@ resource "aws_route_table_association" "rds_route_private_table_association" {
 }
 
 
-#9. RDS subnet group
+# RDS subnet group
 resource "aws_db_subnet_group" "rds_subnet_group" {
   name       = "rds_subnet_group"
   subnet_ids = [for subnet in aws_subnet.rds_subnet_private : subnet.id]
