@@ -19,7 +19,6 @@ A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS, isso 
 
 ```
 ssh-keygen -t rsa -b 4096
-
 ```
 **Importante:** Se o nome da sua chave for diferente deste, você precisará mudar a referência no código terraform, além de que o .gitignore provavelmente não irá evitar que essa chave seja *commitada*.
 
@@ -46,7 +45,7 @@ terraform init
 Feito isso, o terraform estará corretamente inicializado no diretório, e podemos então subir a infraestrutura:
 
 ```
-terraform apply -var-file="secrets.tfvars"
+terraform apply
 ```
 
 Pronto! Agora para testar a conexão, primeiramente utilizaremos a JumpBox como túnel para nossa base de dados:
@@ -88,7 +87,7 @@ show DATABASES;
 
 **1. Preparação do ambiente**
 
-Antes de iniciarmos a implementação da infraestrutura em si, devemos preparar nosso ambiente de trabalho, para isso, basta criarmos uma pasta projeto e um arquivo *provider&period;tf*.
+Antes de iniciarmos a implementação da infraestrutura em si, devemos preparar nosso ambiente de trabalho, para isso, basta criarmos uma pasta projeto e um arquivo ***provider&period;tf***.
 
 Neste arquivo, primeiramente iremos referenciar qual o nosso provider, além de passarmos nossas credenciais da AWS.
 
@@ -101,13 +100,13 @@ Aqui também criaremos um bloco de dados para conseguirmos encontrar facilmente 
 provider "aws" {
   region = "us-east-1"
 
-  # Linux
+  # Linux (Path genérico do AWS CLI)
   shared_config_files      = ["$HOME/.aws/config"]
   shared_credentials_files = ["$HOME/.aws/credentials"]
 
-  # Windows
-  # shared_config_files      = ["%USERPROFILE%\.aws\config"]
-  # shared_credentials_files = ["%USERPROFILE%\.aws\credentials"]
+  # Windows (MUDE O CAMINHO PARA SEU USUARIO)
+  # shared_config_files      = ["C:/Users/eduar/.aws/config"]
+  # shared_credentials_files = ["C:/Users/eduar/.aws/credentials"]
 }
 
 data "aws_availability_zones" "available" {
@@ -381,7 +380,7 @@ output "port" {
 
 Feito tudo isso, basta rodar o comando abaixo e digitar *yes*:
 ```
-terraform apply -var-file="secrets.tfvars"
+terraform apply
 ```
 
 No terminal, deve ter aparecido algo como isto (a instalação da infraestrutura vai demorar em torno de 5 minutos):

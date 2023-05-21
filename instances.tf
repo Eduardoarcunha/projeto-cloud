@@ -1,7 +1,7 @@
 # Key pair
 resource "aws_key_pair" "rds_ec2_key_pair" {
   key_name = "rds_kp"
-  public_key = file("./key-pair/mykp.pub")
+  public_key = file("mykp.pub")
 }
 
 # EC2 instance
