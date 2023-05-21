@@ -6,7 +6,7 @@ variable "private_subnets_cidr_blocks" {
   ]
 }
 
-variable "db_username" {
+/* variable "db_username" {
     description = "Master user of the db"
     type = string
     sensitive = true
@@ -16,4 +16,4 @@ variable "db_password" {
     description = "Master password of the db"
     type = string
     sensitive = true
-}
+} */
