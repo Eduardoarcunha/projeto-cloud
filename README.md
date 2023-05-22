@@ -3,38 +3,95 @@
 **Aluno:** Eduardo Araujo Rodrigues da Cunha
 **Data:** 26/05/2023
 
-
-#### Objetivo de implantação
+### Sobre a implementação
 
 Este roteiro tem como objetivo conectar uma interface gráfica de banco de dados, por exemplo o MySQL Workbench, com um banco de dados RDS que é um serviço da amazon de banco de dados relacionais. 
-A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS.
+A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS, isso possibilita no futuro, configurações de conexões mais seguras, uma vez que não é possível conectar-se diretamente a base de dados.
 
-#### Requisitos da implementação
+### Pré-requisitos da implementação
 
 **1.** Conta [AWS](https://aws.amazon.com/pt/) e credenciais para instalação da infraestrutura.
 
+
 **2.** [Terraform](https://www.terraform.io/) instalado em sua máquina, essa é uma ferramenta de software de infraestrutura como código (IaC).
 
-**3.** *Keypair* com o nome ***mykp***, pode ser gerada pelo seguinte comando:
+**3.** *Keypair* com o nome ***mykp*** no diretório do projeto, pode ser gerada pelo seguinte comando:
 
 ```
 ssh-keygen -t rsa -b 4096
 ```
+**Importante:** Se o nome da sua chave for diferente deste, você precisará mudar a referência no código terraform, além de que o .gitignore provavelmente não irá evitar que essa chave seja *commitada*.
 
-**Observação:** (Caso queira testar a conexão por Workbench) [MySqlWorkbench](https://www.mysql.com/products/workbench/) instalado em sua máquina.
+
+**4.** MySQL Client instalado para testarmos a conexão com a base. [Tutorial Windows](https://www.youtube.com/watch?v=nfDyFWIDWoQ) / [Tutorial Linux](https://dev.mysql.com/doc/mysql-shell/8.0/en/mysql-shell-install-linux-quick.html)
 
 
-#### Tutorial da implementação
+
+**Observação:** (Caso queira testar a conexão pelo MySQLWorkbench) [este](https://www.mysql.com/products/workbench/) deve estar instalado em sua máquina.
+
+
+### Guia rápido de uso (guia detalhado após essa sessão)
+
+Aqui está um rápido guia de uso da infraestrutura, após essa sessão, tem-se a documentação mais detalhada de cada parte do código.
+
+**IMPORTANTE:** Primeiro devemos configurar nossa variáveis de ambiente que não podem ser vazadas! Como nosso usuário master de nosso banco de dados RDS.
+
+Com o código em um diretório de seu computador, e com os pré-requisitos atendidos, primeiramente roda-se o seguinte comando:
+
+```
+terraform init
+```
+
+Feito isso, o terraform estará corretamente inicializado no diretório, e podemos então subir a infraestrutura:
+
+```
+terraform apply
+```
+
+Pronto! Agora para testar a conexão, primeiramente utilizaremos a JumpBox como túnel para nossa base de dados:
+
+```
+ssh -i mykp -f -N -L 5000:<RDS_ENDPOINT>:3306 <EC2_USER>@<PUBLIC_IP> -v
+```
+
+Feito o túnel, agora nos conectamos a base de dados, podemos fazer isso por outra janela do terminal e usando o MySQL:
+```
+mysql -u <DB User> -h 127.0.0.1 -P 5000 -p
+```
+
+Finalizado! Para garantirmos que a base está funcionando, podemos rodar o seguinte comando nesse mesmo terminal:
+```
+show DATABASES;
+```
+### Roteiro detalhado
+
+#### Subdivisão dos arquivos:
+
+***roteiro&period;md:*** Arquivo detalhando melhor a implementação e explicando passo a passo do código.
+
+***provider&period;tf:*** Arquivo terraform onde informa-se as credenciais da AWS, e onde é informado qual nosso provider.
+
+***instances&period;tf:*** Declaração da nossa instância EC2 que atua como Jump Box.
+
+***network&period;tf:*** Declaração dos recursos relacionados a rede.
+
+***rds&period;tf:*** Declaração do recurso referente a base de dados RDS.
+
+***security-groups&period;tf:*** Declaração e configuração dos security groups de cada rede.
+
+***outputs&period;tf:*** Saídas do terraform.
+
+***security-groups&period;tf:*** Variáveis para a implementação.
+
+#### Implementação passo a passo
 
 **1. Preparação do ambiente**
 
-Antes de iniciarmos a implementação da infraestrutura em si, devemos preparar nosso ambiente de trabalho, para isso, basta criarmos uma pasta projeto e um arquivo *main&period;tf*.
+Antes de iniciarmos a implementação da infraestrutura em si, devemos preparar nosso ambiente de trabalho, para isso, basta criarmos uma pasta projeto e um arquivo ***provider&period;tf***.
 
 Neste arquivo, primeiramente iremos referenciar qual o nosso provider, além de passarmos nossas credenciais da AWS.
 
 Aqui também criaremos um bloco de dados para conseguirmos encontrar facilmente quais as zonas disponíveis da AWS para nossa região definida no provider (*us-east-1*).
-
-Por fim, vamos adicionar uma variável para guardarmos os CIDR de nossas subredes privadas.
 
 **Observação:** 
 *Não coloque diretamente suas credencias no código, existem maneiras melhores de referenciá-las no arquivo, como usando variáveis de ambiente. Em nosso caso, estamos usando os arquivos de configuração do AWS CLI como referência, e evitando a exposição de nossas credenciais. Se quiser ver como configurar esses arquivos, confira [este tutorial da Amazon](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).*
@@ -42,20 +99,18 @@ Por fim, vamos adicionar uma variável para guardarmos os CIDR de nossas subrede
 ``` tf
 provider "aws" {
   region = "us-east-1"
-  shared_config_files      = ["C:/Users/eduar/.aws/config"]
-  shared_credentials_files = ["C:/Users/eduar/.aws/credentials"]
+
+  # Linux (Path genérico do AWS CLI)
+  shared_config_files      = ["$HOME/.aws/config"]
+  shared_credentials_files = ["$HOME/.aws/credentials"]
+
+  # Windows (MUDE O CAMINHO PARA SEU USUARIO)
+  # shared_config_files      = ["C:/Users/eduar/.aws/config"]
+  # shared_credentials_files = ["C:/Users/eduar/.aws/credentials"]
 }
 
 data "aws_availability_zones" "available" {
   state = "available"
-}
-
-variable "private_subnets_cidr_blocks" {
-  type = list(string)
-  default = [
-    "10.0.101.0/24",
-    "10.0.102.0/24"
-  ]
 }
 ```
 
@@ -68,10 +123,12 @@ Após o comando, alguns arquivos serão criados no diretório, não precisamos n
 
 ![Init terraform](/imgs/init-terraform.png)
 
-Agora, voltando para nosso arquivo *main*, o próximo passo é criar nossa rede virtual (VPC) e também um gateway para ela:
+Depois disso, iremos criar o arquivo ***variables&period;tf***, nele estará declarado os CIDR de nossas subredes privadas.
+
+Agora, vamos criar um arquivo ***network&period;tf*** o aqui, criaremos nossa rede virtual (VPC) e também um gateway para ela:
 
 ```
-# 1. Creating VPC
+# Creating VPC
 resource "aws_vpc" "rds_vpc" {
   cidr_block = "10.0.0.0/16"
 
@@ -80,7 +137,7 @@ resource "aws_vpc" "rds_vpc" {
   }
 }
 
-# 2. Internet Gateway
+# Internet Gateway
 resource "aws_internet_gateway" "rds_igw" {
   vpc_id = aws_vpc.rds_vpc.id
 
@@ -90,12 +147,12 @@ resource "aws_internet_gateway" "rds_igw" {
 }
 ```
 
-Feito isso, partimos para a criação de uma subrede pública, e duas privadas, e suas tabelas de roteamento.
+Feito isso, partimos para a criação de uma subrede pública, e duas privadas, suas tabelas de roteamento e também um grupo de subredes para nosso RDS.
 
-**Observação:** É necessário a criação de duas privadas pois para atrelarmos um grupo de subredes ao RDS esse grupo necessita de pelo menos duas subredes.
+**Observação:** É necessário a criação de duas redes privadas pois para atrelarmos um grupo de subredes ao RDS esse grupo necessita de pelo menos duas subredes.
 
 ```
-# 3. Public subnet
+# Public subnet
 resource "aws_subnet" "rds_subnet_public" {
   vpc_id            = aws_vpc.rds_vpc.id
   cidr_block        = "10.0.1.0/24"
@@ -106,7 +163,7 @@ resource "aws_subnet" "rds_subnet_public" {
   }
 }
 
-# 4. Private subnet
+# Private subnet
 resource "aws_subnet" "rds_subnet_private" {
   count = 2
   vpc_id            = aws_vpc.rds_vpc.id
@@ -118,7 +175,7 @@ resource "aws_subnet" "rds_subnet_private" {
   }
 }
 
-# 5. Public route table
+# Public route table
 resource "aws_route_table" "rds_route_public_table" {
   vpc_id = aws_vpc.rds_vpc.id
 
@@ -137,7 +194,7 @@ resource "aws_route_table_association" "rds_route_public_table_association" {
   route_table_id = aws_route_table.rds_route_public_table.id
 }
 
-# 6. Private route table
+# Private route table
 resource "aws_route_table" "rds_route_private_table" {
   vpc_id = aws_vpc.rds_vpc.id
 
@@ -150,14 +207,21 @@ resource "aws_route_table_association" "rds_route_private_table_association" {
   subnet_id      = aws_subnet.rds_subnet_private[1].id
   route_table_id = aws_route_table.rds_route_private_table.id
 }
+
+
+# RDS subnet group
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name       = "rds_subnet_group"
+  subnet_ids = [for subnet in aws_subnet.rds_subnet_private : subnet.id]
+}
 ```
 
-Agora, criaremos os grupos de segurança para nossa EC2 e para nosso banco de dados, a instância EC2 deve ser acessível por *HTTPS*, *HTTP* e *SSH*, enquanto a base RDS só pode ser acessível pela instância EC2:
+Agora, criaremos os grupos de segurança para nossa EC2 e para nosso banco de dados, a instância EC2 deve ser acessível por *HTTPS*, *HTTP* e *SSH*, enquanto a base RDS só pode ser acessível pela instância EC2, faremos tudo isso em um novo arquivo ***security-groups&period;tf***:
 
 **Observação:** Como neste exemplo estamos trabalhando com um banco de dados SQL, a porta do serviço é 3306, mas esse valor pode mudar.
 
 ```
-# 7. EC2 security group
+# EC2 security group
 resource "aws_security_group" "rds_ec2_sg" {
   name        = "rds_ec2_sg"
   description = "Allow traffic to EC2"
@@ -201,7 +265,7 @@ resource "aws_security_group" "rds_ec2_sg" {
   }
 }
 
-#8. RDS security group
+# RDS security group
 resource "aws_security_group" "rds_db_sg" {
   name        = "rds_db_sg"
   description = "Allow traffic to RDS"
@@ -224,16 +288,12 @@ resource "aws_security_group" "rds_db_sg" {
 
 Depois disso, deve-se criar o grupo de subredes para nosso banco de dados, além do próprio banco de dados. Aqui estão definidas as configurações gerais desse, como seu armazenamento.
 
+Agora, podemos criar nosso banco de dados RDS e definir suas configurações gerais, vamos fazer isso no arquivo ***rds&period;tf*** 
+
 **Importante:** Note que é aqui que estamos definindo o usuário e a senha de nosso banco de dados, lembre-se de guardar esses valores para nos conectarmos na base no futuro.
 
 ```
-#9. RDS subnet group
-resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "rds_subnet_group"
-  subnet_ids = [for subnet in aws_subnet.rds_subnet_private : subnet.id]
-}
-
-# 10. RDS instance
+# RDS instance
 resource "aws_db_instance" "rds_instance" {
   allocated_storage    = 20
   engine               = "mysql"
@@ -253,6 +313,8 @@ resource "aws_db_instance" "rds_instance" {
 
 Agora, precisamos criar um par de chaves para nossa instância EC2, uma forma de criá-las é pelo próprio terminal:
 
+**Importante:** Atenção para qual nome escolher para as chaves, pois você precisa referenciar o arquivo delas corretamente no código! No tutorial estamos utilizando o nome ***mykp***
+
 ```
 ssh-keygen -t rsa -b 4096
 ```
@@ -262,18 +324,18 @@ Ao rodar o comando, escolha um nome para os arquivos em que serão salvas suas c
 ![Estrutura projeto](/imgs/estrutura-projeto.png)
 
 
-Feito isso, agora devemos criar nossa instância EC2, referenciar nossa chave privada (o arquivo com extensão *.pub*) e criar um Elastic IP para nossa instância:
+Feito isso, agora devemos criar nossa instância EC2, referenciar nossa chave privada (o arquivo com extensão *.pub*), além de criar um Elastic IP para nossa instância. Isso será feito no arquivo ***instances&period;tf*** :
 
 **Cuidado:** Se atente em como você está referenciando sua chave em *public_key*
 
 ```
-# 11. Key pair
+# Key pair
 resource "aws_key_pair" "rds_ec2_key_pair" {
   key_name = "rds_kp"
-  public_key = file("./chaves.pub")
+  public_key = file("./key-pair/mykp.pub")
 }
 
-# 12. EC2 instance
+# EC2 instance
 resource "aws_instance" "ec2_instance" {
   ami           = "ami-007855ac798b5175e"
   instance_type = "t2.micro"
@@ -286,7 +348,7 @@ resource "aws_instance" "ec2_instance" {
   }
 }
 
-# 13. Elastic IP
+# Elastic IP
 resource "aws_eip" "rds_eip" {
   vpc = true
   instance = aws_instance.ec2_instance.id
@@ -297,7 +359,7 @@ resource "aws_eip" "rds_eip" {
 }
 ```
 
-Finalmente, agora adicionaremos alguns *outputs*, para podermos ver os endereços que serão necessários na conexão com a nossa base de dados:
+Finalmente, agora adicionaremos algumas saídas em nosso código, faremos isso no arquivo ***outputs&period;tf***, para podermos ver os endereços que serão necessários na conexão com a nossa base de dados:
 
 ```
 # Public IP (Elastic IP)
@@ -329,18 +391,16 @@ Guarde esse valores! Com eles nós iremos fazer nossa conexão com a base de dad
 
 #### Realizando a conexão diretamente por CLI
 
-Uma maneira alternativa para testarmos nossa conexão é fazer ssh para nossa EC2, e então nos conectarmos a base, para isso, basta rodar o seguinte comando no terminal:
+Uma maneira de testarmos nossa conexão é fazer ssh para nossa EC2, e então nos conectarmos a base, para isso, basta rodar o seguinte comando no terminal para criar o túnel:
 
 ```
-ssh -i "mykp" ubuntu@$(terraform output -raw public_ip)
+ssh -i mykp -f -N -L 5000:<RDS_ENDPOINT>:3306 <EC2_USER>@<PUBLIC_IP> -v
 ```
 
-Feito isso, agora estamos em nossa EC2 a qual tem acesso ao banco de dados.
-
-Agora basta rodar o seguinte comando, substituindo os valores em cochetes pela endpoint da nossa RDS, da porta de acesso (3306), e pelo usuario definido na criação da RDS.
+Agora, já é possível nos conectar com a base de dados! Em outro terminal, rode o seguinte comando substituindo *DB User* pelo usuario de sua base de dados! Após rodar o comando, a senha da base será requisitada, basta inseri-la que estaremos conectados!
 
 ```
-mysql -h <database-endpoint> -P <port> -u <db-username> -p
+mysql -u <DB User> -h 127.0.0.1 -P 5000 -p
 ```
 
 Para verificarmos se tudo esta funcionando corretamente, basta rodar o seguinte comando:
@@ -353,11 +413,11 @@ show DATABASES;
 
 #### Realizando a conexão pelo MySQL
 
-Agora, podemos finalmente realizar nossa conexão, o que acontece é que realizaremos um túnel com nossa base de dados a partir da nossa instância EC2. 
+Agora, podemos finalmente realizar nossa conexão pelo MySQLWorkbench, ambiente mais propício para trabalhar com a base do que o terminal! 
 
-Como estamos usando o MySqlWorkbench, conseguimos realizar esse túnel pela própria ferramenta.
+Conseguimos realizar a conexão pela própria ferramenta!
 
-Ta tela inicial do MySql, iremos criam no **+** e adicionar uma nova conexão.
+Ta tela inicial do MySql, iremos clicar no **+** e adicionar uma nova conexão.
 
 ![Print terminal](/imgs/mysql-telainicial.png)
 
@@ -393,7 +453,11 @@ Feito! Agora você já consegue acessar sua base de dados! Basta clicar na conex
 
 ![Conexão realizada](/imgs/mysql-base.png)
 
-Terminamos! Aqui finalizamos nosso roteiro de implementação, se quiser destruir os recursos criados na AWS basta apagar o código criado com exceção do recurso *provider* e então rodar o comando terraform apply mais uma vez"
+Terminamos! Aqui finalizamos nosso roteiro de implementação, se quiser destruir os recursos criados na AWS basta rodar o seguinte comando:
+
+```
+terraform destroy
+```
 
 #### Referências
 
