@@ -1,28 +1,47 @@
-# Key pair
-resource "aws_key_pair" "rds_ec2_key_pair" {
-  key_name = "rds_kp"
-  public_key = file("mykp.pub")
+# IAM role to access RDS
+resource "aws_iam_role" "bastion_role" {
+  name = "bastion_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+
+  tags = {
+      tag-key = "tag-value"
+  }
+}
+
+resource "aws_iam_instance_profile" "rds_profile" {
+  name = "bastion"
+  role = "${aws_iam_role.bastion_role.name}"
+}
+
+resource "aws_iam_role_policy_attachment" "dev-resources-ssm-policy" {
+  role       = aws_iam_role.bastion_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 # EC2 instance
 resource "aws_instance" "ec2_instance" {
-  ami           = "ami-007855ac798b5175e"
+  ami           = "ami-0889a44b331db0194"
   instance_type = "t2.micro"
-  key_name      = aws_key_pair.rds_ec2_key_pair.key_name
-  subnet_id     = aws_subnet.rds_subnet_public.id
-  vpc_security_group_ids = [aws_security_group.rds_ec2_sg.id]
+  subnet_id     = aws_subnet.rds_subnet_private[0].id
+  vpc_security_group_ids = [aws_security_group.ec2_bastion_sg.id]
+  iam_instance_profile = "${aws_iam_instance_profile.rds_profile.name}"
 
   tags = {
     Name = "ec2_instance"
-  }
-}
-
-# Elastic IP
-resource "aws_eip" "rds_eip" {
-  vpc = true
-  instance = aws_instance.ec2_instance.id
-
-  tags = {
-    Name = "rds_eip"
   }
 }

@@ -1,0 +1,1 @@
+aws ssm start-session --region us-east-1 --target i-02061ee9ef6f3417b --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="terraform-20230522185647850900000001.cvjjinfgjj5r.us-east-1.rds.amazonaws.com",portNumber="1433",localPortNumber="1433"

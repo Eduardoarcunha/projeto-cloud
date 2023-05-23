@@ -7,7 +7,7 @@ resource "aws_db_instance" "rds_instance" {
   db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.id
   username             = "admin"
   password             = "admineduardo"
-  vpc_security_group_ids = [aws_security_group.rds_db_sg.id]
+  vpc_security_group_ids = [aws_security_group.ec2_bastion_sg.id]
   skip_final_snapshot = true
 
   tags = {
