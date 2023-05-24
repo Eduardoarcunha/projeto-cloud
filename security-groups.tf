@@ -4,7 +4,7 @@ resource "aws_security_group" "instance_security_group" {
   vpc_id      = aws_vpc.vpc.id
   description = "security group for the EC2 instance"
 
-  # Allow outbound HTTPS traffic
+  # Outbound rules (HTTP, MYSQL)
   egress {
     from_port   = 443
     to_port     = 443
@@ -13,7 +13,6 @@ resource "aws_security_group" "instance_security_group" {
     description = "Allow HTTPS outbound traffic"    
   }
 
-  # Outbound to db port
   egress {
     from_port   = 3306
     to_port     = 3306
@@ -22,7 +21,7 @@ resource "aws_security_group" "instance_security_group" {
     description = "Allow MYSQL outbound traffic"
   }
 
-  # Allow connection to db port
+  # Inbound rules (MYSQL)
   ingress {
     from_port   = 3306
     to_port     = 3306
