@@ -1,47 +1,55 @@
-# IAM role to access RDS
-resource "aws_iam_role" "bastion_role" {
-  name = "bastion_role"
+# Create IAM role for EC2 instance
+resource "aws_iam_role" "ec2_role" {
+  name = "EC2_SSM_Role"
 
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "ec2.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
-
-  tags = {
-      tag-key = "tag-value"
-  }
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 }
 
-resource "aws_iam_instance_profile" "rds_profile" {
-  name = "bastion"
-  role = "${aws_iam_role.bastion_role.name}"
-}
-
-resource "aws_iam_role_policy_attachment" "dev-resources-ssm-policy" {
-  role       = aws_iam_role.bastion_role.name
+# Attach AmazonSSMManagedInstanceCore policy to the IAM role
+resource "aws_iam_role_policy_attachment" "ec2_role_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  role       = aws_iam_role.ec2_role.name
 }
 
-# EC2 instance
-resource "aws_instance" "ec2_instance" {
-  ami           = "ami-0889a44b331db0194"
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.rds_subnet_private[0].id
-  vpc_security_group_ids = [aws_security_group.ec2_bastion_sg.id]
-  iam_instance_profile = "${aws_iam_instance_profile.rds_profile.name}"
+# Create an instance profile for the EC2 instance and associate the IAM role
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "EC2_SSM_Instance_Profile"
 
-  tags = {
-    Name = "ec2_instance"
+  role = aws_iam_role.ec2_role.name
+}
+
+data "aws_ami" "amazon_linux_2_ssm" {
+  most_recent = true
+
+  filter {
+    name   = "owner-alias"
+    values = ["amazon"]
   }
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-ebs"]
+  }
+}
+
+# Create EC2 instance
+resource "aws_instance" "ec2_instance" {
+  ami           = data.aws_ami.amazon_linux_2_ssm.id
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.private_subnet[0].id
+  vpc_security_group_ids = [
+    aws_security_group.instance_security_group.id,
+  ]
+  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
 }
