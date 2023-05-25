@@ -7,17 +7,17 @@
 
 ## Sobre a implementação
 
-Este roteiro tem como objetivo conectar uma interface gráfica de banco de dados, por exemplo o MySQL Workbench, com um banco de dados RDS que é um serviço da amazon de banco de dados relacionais. 
+Este roteiro tem como objetivo conectar uma interface gráfica de banco de dados, por exemplo o MySQL Workbench, com um banco de dados [RDS](https://aws.amazon.com/pt/rds/) que é um serviço da amazon de banco de dados relacionais. 
 
 A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS, isso possibilita no futuro, configurações de conexões mais seguras, uma vez que não é possível conectar-se diretamente a base de dados.
 
-Porém o diferencial é que a conexão com a EC2 ocorre por meio da  AWS Systems Manager Session Manager (SSM), que é uma ferramenta de conexão mais segura, e que dentre várias vantagens que a ferramenta oferece, uma delas é que não é necessário um *key-pair* para nos conectarmos a uma instância EC2.
+Porém, o diferencial é que a conexão com a EC2 ocorrerá por meio da AWS Systems Manager Session Manager (SSM), que é uma ferramenta de conexão mais segura, e que dentre várias vantagens que a ferramenta oferece, uma delas é que não é necessário um *key-pair* para nos conectarmos a uma instância EC2.
 
 ## Pré-requisitos da implementação
 
 **1.** Conta [AWS](https://aws.amazon.com/pt/) e credenciais para instalação da infraestrutura.
 
-**2.** [Terraform](https://www.terraform.io/) instalado em sua máquina, essa é uma ferramenta de software de infraestrutura como código (IaC).
+**2.** [Terraform](https://www.terraform.io/) instalado em sua máquina, que é uma ferramenta de software de infraestrutura como código (IaC).
 
 **3.** Para testarmos nossa conexão com a base, temos diferentes opções, neste tutorial 3 são englobadas, para cada uma é necessário um pré-requisito diferente, escolha a que atender melhor sua necessidade:
 
@@ -34,7 +34,7 @@ pip install mysql-connector-python
 
 ## Guia rápido de uso (guia detalhado após essa sessão)
 
-Aqui está um rápido guia de uso da infraestrutura, após essa sessão, tem-se a documentação mais detalhada de cada parte do código. Neste guia rápido, estamos testando a conexão pela maneira **a** (Terminal e MySQL Client)
+Para fins de praticidaded, aqui está um rápido guia de uso da infraestrutura, após essa sessão, tem-se a documentação mais detalhada de cada parte do código. Neste guia rápido, estamos testando a conexão pela maneira **a** (Terminal e MySQL Client)
 
 Clone o código em um diretório de seu computador, e com os pré-requisitos atendidos, vamos inicializar um projeto terraform:
 
@@ -42,7 +42,7 @@ Clone o código em um diretório de seu computador, e com os pré-requisitos ate
 terraform init
 ```
 
-Feito isso, o terraform estará corretamente inicializado no diretório, e podemos então subir a infraestrutura, ao rodar o próximo comando, será perguntado se você quer confirmar as mudanças, basta digitar ****yes**:
+Feito isso, o terraform estará corretamente inicializado no diretório, e podemos subir a infraestrutura, ao rodar o próximo comando, será perguntado se você quer confirmar as mudanças, basta digitar ***yes*** (o processo de instalação pode demorar entre 5 a 8 minutos!):
 
 ```
 terraform apply
@@ -53,13 +53,13 @@ Pronto! Feito isso, algumas variáveis devem ter aparecido em seu terminal, prec
 <span style="color:red"><span style="font-weight:700">IMPORTANTE:</span> Troque as variáveis pelos respectivos valores que aparecerem em seu terminal!</span>
 
 ```
-aws ssm start-session --region us-east-1 --target <ID_EC2> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="<RDS_ENDPOINT>",portNumber="3306",localPortNumber="8001"
+aws ssm start-session --region us-east-1 --target <INSTANCE_ID> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="<RDS_ENDPOINT>",portNumber="3306",localPortNumber="8001"
 ```
 
 Feito a conexão, é possível conectar-se a base de dados! Antes, para você saber eu declarei as seguintes credenciais para esse banco de dados:
 
 **User:** admin 
-**Password:** admineduardo
+**Password:** adminrds
 
 Abra um **novo** terminal e faça a conexão:
 
@@ -74,6 +74,8 @@ show DATABASES;
 ```
 
 A seguinte imagem deve aparecer:
+
+![](/imgs/databases-terminal.png)
 
 ## Roteiro detalhado
 
@@ -138,6 +140,44 @@ Após o comando, alguns arquivos serão criados no diretório, não precisamos n
 Depois disso, iremos criar o arquivo ***variables&period;tf***, aqui temos dois *data blocks* que requisitam informação da AWS sobre quais regiões estão disponíveis dentro de nossa principal região, além de requisitar também um AMI (Amazon Machine Image) para configurarmos nossa instância EC2.
 
 Também temos as variáveis referentes ao CIDR de nossas subredes privadas e à região dos nossos recursos AWS.
+
+``` terraform
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+data "aws_ami" "amazon_linux_2_ssm" {
+  most_recent = true
+
+  filter {
+    name   = "owner-alias"
+    values = ["amazon"]
+  }
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-ebs"]
+  }
+}
+
+variable "region" {
+  type        = string
+  description = "Region for the resource deployment"
+  default     = "us-east-1"
+}
+
+variable "private_subnets_cidr_blocks" {
+  type = list(string)
+  default = [
+    "10.0.101.0/24",
+    "10.0.102.0/24"
+  ]
+}
+
+```
+
+
+**3. Network**
 
 Agora, vamos criar um arquivo ***network&period;tf***, criaremos nossa rede virtual (VPC), as subredes necessárias e gateways necessários, além do grupo de subredes de nossa base de dados!
 
@@ -239,7 +279,7 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
 }
 ```
 
-**3. Security Groups**
+**4. Security Groups**
 
 Agora, criaremos os grupos de segurança para nossa EC2 e para os endpoints de nossa rede, que possibilitam a conexão a recursos privados sem o uso de uma conexão pública! Faremos tudo isso em um novo arquivo ***security-groups&period;tf***:
 
@@ -328,7 +368,7 @@ resource "aws_vpc_endpoint" "endpoints" {
 }
 ```
 
-**4. Instância RDS**
+**5. Instância RDS**
 
 Depois disso, podemos criar nosso banco de dados RDS e definir suas configurações gerais, vamos fazer isso no arquivo ***rds&period;tf*** .
 
@@ -343,7 +383,7 @@ resource "aws_db_instance" "rds_instance" {
   db_name              = "rds_db"
   db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.id
   username             = "admin"
-  password             = "admineduardo"
+  password             = "adminrds"
   vpc_security_group_ids = [aws_security_group.instance_security_group.id]
   skip_final_snapshot = true
 
@@ -353,9 +393,7 @@ resource "aws_db_instance" "rds_instance" {
 }
 ```
 
-![Estrutura projeto](/imgs/estrutura-projeto.png)
-
-**5. Instância EC2**
+**6. Instância EC2**
 
 Feito isso, agora devemos criar nossa instância EC2, além de atrelar a ela um *IAM role*, que define quais permissões essa instância tem em nossa rede. Isso será feito no arquivo ***instances&period;tf*** :
 
@@ -405,7 +443,7 @@ resource "aws_instance" "ec2_instance" {
 }
 ```
 
-**6. Outputs**
+**7. Outputs**
 
 Finalmente, agora adicionaremos algumas saídas em nosso código, faremos isso no arquivo ***outputs&period;tf***, para podermos ver os endereços que serão necessários na conexão com a nossa base de dados:
 
@@ -426,14 +464,14 @@ output "instance_id" {
 }
 ```
 
-Feito tudo isso, basta rodar o comando abaixo e digitar *yes*:
+Feito tudo isso, basta rodar o comando abaixo e digitar ***yes*** (a instalação da infraestrutura vai demorar em torno de 5 a 8 minutos):
 ```
 terraform apply
 ```
 
-No terminal, deve ter aparecido algo como isto (a instalação da infraestrutura vai demorar em torno de 5 a 8 minutos):
+No terminal, deve ter aparecido algo como isto:
 
-![Print terminal](/imgs/apply-feito.png)
+![Print terminal](/imgs/apply-terminal.png)
 
 Guarde esse valores! Com eles nós iremos fazer nossa conexão com a base de dados!
 
@@ -460,6 +498,12 @@ Para verificarmos se tudo esta funcionando corretamente, basta rodar o seguinte 
 ```
 show DATABASES;
 ```
+
+A seguinte imagem deve aparecer:
+
+![](/imgs/databases-terminal.png)
+
+
 **b. Realizando a conexão pelo Python**
 
 Para testarmos usando um ambiente python, também precisamos fazer a conexão SSM pelo terminal:
@@ -468,7 +512,7 @@ Para testarmos usando um ambiente python, também precisamos fazer a conexão SS
 aws ssm start-session --region us-east-1 --target <INSTANCE_ID> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="<RDS_ENDPOINT>",portNumber="3306",localPortNumber="8001"
 ```
 
-Agora para nos conectarmos a base em si, temos o _notebook_ ***pokemon_rds.ipynb*** pronto para isso, basta rodá-lo! Nele já estão os comandos envolvendo a instalação de pacotes necessários, apenas rode célula a célula!
+Agora para nos conectarmos a base em si, temos o _notebook_ ***pokemon_rds.ipynb*** pronto para isso, basta rodá-lo! Nele já estão os comandos envolvendo a instalação de pacotes necessários, apenas rode célula as células!
 
 
 **c. Realizando a conexão pelo MySQL**
@@ -491,7 +535,7 @@ Aqui devemos fazer as seguintes mudanças **usando os valores dos outputs**:
 
 **Username:** É o *username* escolhido na criação de nossa base RDS, no meu caso, é **admin**.
 
-**Password:** É o *password* escolhido na criação de nossa base RDS, no meu caso, é **admineduardo**, para inseri-la, basta clicar em *Store in Vault..* .
+**Password:** É o *password* escolhido na criação de nossa base RDS, no meu caso, é **adminrds**, para inseri-la, basta clicar em *Store in Vault..* .
 
 Concluindo, sua janela deve estar de forma semelhante a esta:
 
@@ -506,7 +550,7 @@ Feito! Agora você já consegue acessar sua base de dados! Basta clicar na conex
 
 ![Conexão realizada](/imgs/mysql-base.png)
 
-Terminamos! Aqui finalizamos nosso roteiro de implementação, se quiser destruir os recursos criados na AWS basta rodar o seguinte comando:
+Terminamos! Aqui finalizamos nosso roteiro de implementação, se quiser destruir os recursos, primeiramente finalize a conexão SSM feita no terminal e depois basta rodar o seguinte comando, e digitar ***yes*** para confirmar:
 
 ```
 terraform destroy
@@ -514,8 +558,16 @@ terraform destroy
 
 #### Referências
 
-https://medium.com/strategio/using-terraform-to-create-aws-vpc-ec2-and-rds-instances-c7f3aa416133
+
+https://beabetterdev.com/2022/12/13/how-to-connect-to-an-rds-or-aurora-database-in-a-private-subnet/ 
+
+https://dev.to/aws-builders/connecting-to-private-ec2-instances-using-systems-manager-a-hands-on-guide-33m
+
+https://dev.to/aws-builders/how-to-set-up-session-manager-and-enable-ssh-over-ssm-43k9#:~:text=Go%20to%20EC2%20instances%2C%20select,created%20in%20the%20previous%20step
+
+https://dev.to/aws-builders/securely-access-your-ec2-instances-with-aws-systems-manager-ssm-and-vpc-endpoints-1bli 
 
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/tutorial-connect-ec2-instance-to-rds-database.html 
 
-https://beabetterdev.com/2022/12/13/how-to-connect-to-an-rds-or-aurora-database-in-a-private-subnet/ 
+https://medium.com/strategio/using-terraform-to-create-aws-vpc-ec2-and-rds-instances-c7f3aa416133
+
