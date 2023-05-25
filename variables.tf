@@ -1,3 +1,27 @@
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+data "aws_ami" "amazon_linux_2_ssm" {
+  most_recent = true
+
+  filter {
+    name   = "owner-alias"
+    values = ["amazon"]
+  }
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-ebs"]
+  }
+}
+
+variable "region" {
+  type        = string
+  description = "Region for the resource deployment"
+  default     = "us-east-1"
+}
+
 variable "private_subnets_cidr_blocks" {
   type = list(string)
   default = [
@@ -6,14 +30,3 @@ variable "private_subnets_cidr_blocks" {
   ]
 }
 
-/* variable "db_username" {
-    description = "Master user of the db"
-    type = string
-    sensitive = true
-}
-
-variable "db_password" {
-    description = "Master password of the db"
-    type = string
-    sensitive = true
-} */

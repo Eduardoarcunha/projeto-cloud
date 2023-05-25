@@ -1,14 +1,14 @@
-# Public IP (Elastic IP)
-output "public_ip" {
-  value = aws_eip.rds_eip.public_ip
+# Usuario da Base de Dados
+output "db_username" {
+  value = aws_db_instance.rds_instance.username
 }
 
-# Endpoint (Database endpoint)
-output "endpoint" {
+# Endpoint da base de dados
+output "rds_endpoint" {
   value = aws_db_instance.rds_instance.address
 }
 
-# Port
-output "port" {
-  value = aws_db_instance.rds_instance.port
+# ID da instância EC2
+output "instance_id" {
+  value = aws_instance.ec2_instance.id
 }
