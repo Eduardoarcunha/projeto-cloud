@@ -1,36 +1,38 @@
-## Conexão do RDS da AWS com uma interface gráfica de base de dados
+# Conexão do RDS da AWS com uma interface gráfica de base de dados
 **Projeto de Computação em Nuvem**
+
 **Aluno:** Eduardo Araujo Rodrigues da Cunha
+
 **Data:** 26/05/2023
 
-### Sobre a implementação
+## Sobre a implementação
 
 Este roteiro tem como objetivo conectar uma interface gráfica de banco de dados, por exemplo o MySQL Workbench, com um banco de dados RDS que é um serviço da amazon de banco de dados relacionais. 
-A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS, isso possibilita no futuro, configurações de conexões mais seguras, uma vez que não é possível conectar-se diretamente a base de dados.
-Porém o diferencial é que a conexão com a EC2 ocorre por meio da AWS SSM, que é uma ferramenta de conexão mais segura, de forma que não precisamos de um *key-pair* para nos conectarmos a uma instância EC2.
 
-### Pré-requisitos da implementação
+A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS, isso possibilita no futuro, configurações de conexões mais seguras, uma vez que não é possível conectar-se diretamente a base de dados.
+
+Porém o diferencial é que a conexão com a EC2 ocorre por meio da  AWS Systems Manager Session Manager (SSM), que é uma ferramenta de conexão mais segura, e que dentre várias vantagens que a ferramenta oferece, uma delas é que não é necessário um *key-pair* para nos conectarmos a uma instância EC2.
+
+## Pré-requisitos da implementação
 
 **1.** Conta [AWS](https://aws.amazon.com/pt/) e credenciais para instalação da infraestrutura.
-
 
 **2.** [Terraform](https://www.terraform.io/) instalado em sua máquina, essa é uma ferramenta de software de infraestrutura como código (IaC).
 
 **3.** Para testarmos nossa conexão com a base, temos diferentes opções, neste tutorial 3 são englobadas, para cada uma é necessário um pré-requisito diferente, escolha a que atender melhor sua necessidade:
 
-**a. Terminal e MySQL Client:** Para nos conectarmos pelo terminal, é necessário ter o MySQL Client instalado, aqui estão os tutoriais para o [Windows](https://www.youtube.com/watch?v=nfDyFWIDWoQ) e [Linux](https://dev.mysql.com/doc/mysql-shell/8.0/en/mysql-shell-install-linux-quick.html).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**a. Terminal e MySQL Client:** Para nos conectarmos pelo terminal, é necessário ter o MySQL Client instalado, aqui estão os tutoriais para o [Windows](https://www.youtube.com/watch?v=nfDyFWIDWoQ) e [Linux](https://dev.mysql.com/doc/mysql-shell/8.0/en/mysql-shell-install-linux-quick.html).
 
-**b. Python:** Temos no repositório, um arquivo um *notebook* que testa a conexão para a base, para este teste, é necessário, além do python, o seguinte pacote:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**b. Python:** Temos no repositório, um arquivo *notebook* que testa a conexão para a base, para este teste, é necessário, além do python, o seguinte pacote:
 
 ``` 
 pip install mysql-connector-python
 ```
 
-**c. MySQL Workbench:** Por fim, também mostraremos como usar a interface gráfica MySQL Workbench para se conectar a base, portanto, é necessário [instalá-la](https://www.mysql.com/products/workbench/).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**c. MySQL Workbench:** Por fim, também mostraremos como usar a interface gráfica MySQL Workbench para se conectar a base, portanto, é necessário [instalá-la](https://www.mysql.com/products/workbench/).
 
 
-
-### Guia rápido de uso (guia detalhado após essa sessão)
+## Guia rápido de uso (guia detalhado após essa sessão)
 
 Aqui está um rápido guia de uso da infraestrutura, após essa sessão, tem-se a documentação mais detalhada de cada parte do código. Neste guia rápido, estamos testando a conexão pela maneira **a** (Terminal e MySQL Client)
 
@@ -40,7 +42,7 @@ Clone o código em um diretório de seu computador, e com os pré-requisitos ate
 terraform init
 ```
 
-Feito isso, o terraform estará corretamente inicializado no diretório, e podemos então subir a infraestrutura:
+Feito isso, o terraform estará corretamente inicializado no diretório, e podemos então subir a infraestrutura, ao rodar o próximo comando, será perguntado se você quer confirmar as mudanças, basta digitar ****yes**:
 
 ```
 terraform apply
@@ -54,7 +56,12 @@ Pronto! Feito isso, algumas variáveis devem ter aparecido em seu terminal, prec
 aws ssm start-session --region us-east-1 --target <ID_EC2> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="<RDS_ENDPOINT>",portNumber="3306",localPortNumber="8001"
 ```
 
-Feito a conexão, é possível conectar-se a base de dados! Abra um **novo** terminal e faça a conexão:
+Feito a conexão, é possível conectar-se a base de dados! Antes, para você saber eu declarei as seguintes credenciais para esse banco de dados:
+
+**User:** admin 
+**Password:** admineduardo
+
+Abra um **novo** terminal e faça a conexão:
 
 <span style="color:red"><span style="font-weight:700">IMPORTANTE:</span> Após digitar o sinal, será solicitado a senha da base de dados!</span>
 ```
@@ -68,9 +75,11 @@ show DATABASES;
 
 A seguinte imagem deve aparecer:
 
-### Roteiro detalhado
+## Roteiro detalhado
 
-#### Subdivisão dos arquivos:
+### Subdivisão dos arquivos:
+
+Antes de explicar cada um dos arquivos terraform, aqui está a estrutura do projeto:
 
 ***README&period;md:*** Arquivo detalhando melhor a implementação e explicando passo a passo do código.
 
@@ -90,7 +99,7 @@ A seguinte imagem deve aparecer:
 
 ***pokemon-rds&period;ipynb:*** Arquivo *notebook* para teste da conexão da infraestrutura.
 
-#### Implementação passo a passo
+### Implementação passo a passo
 
 **1. Preparação do ambiente**
 
@@ -124,9 +133,11 @@ Após o comando, alguns arquivos serão criados no diretório, não precisamos n
 
 ![Init terraform](/imgs/init-terraform.png)
 
-Depois disso, iremos criar o arquivo ***variables&period;tf***, aqui temos dois *data blocks* que requisitam informação da AWS sobre quais regiões estão disponíveis dentro de nossa principal região, além de requisitar também um AMI para configurarmos nossa instância EC2.
+**2. Variables**
 
-Também temos as variáveis referentes ao CIDR de nossas subredes privadas e à região dos nossos recursos AWS e também.
+Depois disso, iremos criar o arquivo ***variables&period;tf***, aqui temos dois *data blocks* que requisitam informação da AWS sobre quais regiões estão disponíveis dentro de nossa principal região, além de requisitar também um AMI (Amazon Machine Image) para configurarmos nossa instância EC2.
+
+Também temos as variáveis referentes ao CIDR de nossas subredes privadas e à região dos nossos recursos AWS.
 
 Agora, vamos criar um arquivo ***network&period;tf***, criaremos nossa rede virtual (VPC), as subredes necessárias e gateways necessários, além do grupo de subredes de nossa base de dados!
 
@@ -228,9 +239,11 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
 }
 ```
 
+**3. Security Groups**
+
 Agora, criaremos os grupos de segurança para nossa EC2 e para os endpoints de nossa rede, que possibilitam a conexão a recursos privados sem o uso de uma conexão pública! Faremos tudo isso em um novo arquivo ***security-groups&period;tf***:
 
-**Observação:** Como neste exemplo estamos trabalhando com um banco de dados SQL, a porta do serviço é 3306, mas esse valor pode mudar.
+**Observação:** Como neste exemplo estamos trabalhando com um banco de dados SQL, a porta do serviço é 3306, mas esse valor pode mudar de acordo com sua escolha.
 
 ``` terraform
 # Create a security group for the EC2 instance
@@ -315,6 +328,8 @@ resource "aws_vpc_endpoint" "endpoints" {
 }
 ```
 
+**4. Instância RDS**
+
 Depois disso, podemos criar nosso banco de dados RDS e definir suas configurações gerais, vamos fazer isso no arquivo ***rds&period;tf*** .
 
 **Importante:** Note que é aqui que estamos definindo o usuário e a senha de nosso banco de dados, lembre-se de guardar esses valores para nos conectarmos na base no futuro.
@@ -340,6 +355,7 @@ resource "aws_db_instance" "rds_instance" {
 
 ![Estrutura projeto](/imgs/estrutura-projeto.png)
 
+**5. Instância EC2**
 
 Feito isso, agora devemos criar nossa instância EC2, além de atrelar a ela um *IAM role*, que define quais permissões essa instância tem em nossa rede. Isso será feito no arquivo ***instances&period;tf*** :
 
@@ -389,17 +405,14 @@ resource "aws_instance" "ec2_instance" {
 }
 ```
 
+**6. Outputs**
+
 Finalmente, agora adicionaremos algumas saídas em nosso código, faremos isso no arquivo ***outputs&period;tf***, para podermos ver os endereços que serão necessários na conexão com a nossa base de dados:
 
 ``` terraform
 # Usuario da Base de Dados
 output "db_username" {
   value = aws_db_instance.rds_instance.username
-}
-
-# Senha da Base de Dados
-output "db_password" {
-  value = aws_db_instance.rds_instance.password
 }
 
 # Endpoint da base de dados
@@ -418,13 +431,15 @@ Feito tudo isso, basta rodar o comando abaixo e digitar *yes*:
 terraform apply
 ```
 
-No terminal, deve ter aparecido algo como isto (a instalação da infraestrutura vai demorar em torno de 5 minutos):
+No terminal, deve ter aparecido algo como isto (a instalação da infraestrutura vai demorar em torno de 5 a 8 minutos):
 
 ![Print terminal](/imgs/apply-feito.png)
 
 Guarde esse valores! Com eles nós iremos fazer nossa conexão com a base de dados!
 
-#### a. Realizando a conexão diretamente por CLI
+### Testando nossa infraestrutura
+
+**a. Realizando a conexão diretamente por CLI**
 
 Uma maneira de testarmos nossa conexão é por meio do terminal e do MySQL CLI, para isso, primeiro nos conectamos a rede por SSM:
 
@@ -445,32 +460,34 @@ Para verificarmos se tudo esta funcionando corretamente, basta rodar o seguinte 
 ```
 show DATABASES;
 ```
-#### Realizando a conexão pelo Python
+**b. Realizando a conexão pelo Python**
+
+Para testarmos usando um ambiente python, também precisamos fazer a conexão SSM pelo terminal:
+
+```
+aws ssm start-session --region us-east-1 --target <INSTANCE_ID> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="<RDS_ENDPOINT>",portNumber="3306",localPortNumber="8001"
+```
+
+Agora para nos conectarmos a base em si, temos o _notebook_ ***pokemon_rds.ipynb*** pronto para isso, basta rodá-lo! Nele já estão os comandos envolvendo a instalação de pacotes necessários, apenas rode célula a célula!
 
 
-#### Realizando a conexão pelo MySQL
+**c. Realizando a conexão pelo MySQL**
 
-Agora, podemos finalmente realizar nossa conexão pelo MySQLWorkbench, ambiente mais propício para trabalhar com a base do que o terminal! 
+Finalmente, podemos realizar nossa conexão pelo MySQLWorkbench, ambiente mais propício para trabalhar com a base do que o terminal! Mais uma vez, precisamos fazer a conexão SSM pelo terminal:
 
-Conseguimos realizar a conexão pela própria ferramenta!
+```
+aws ssm start-session --region us-east-1 --target <INSTANCE_ID> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="<RDS_ENDPOINT>",portNumber="3306",localPortNumber="8001"
+```
 
-Ta tela inicial do MySql, iremos clicar no **+** e adicionar uma nova conexão.
+Feito isso, abra o MySQL Workbench, e na tela inicial, clique no **+** para adicionarmos uma nova conexão.
 
 ![Print terminal](/imgs/mysql-telainicial.png)
 
-Então, uma janela vai aparecer para configurarmos ela, o primeiro passo é mudar o *Connection Method* para *Standard TCP/IP over SSH*.
+Então, uma janela vai aparecer para configurarmos ela, o primeiro passo é garantir que o *Connection Method* está em *Standard TCP/IP*.
 
 Aqui devemos fazer as seguintes mudanças **usando os valores dos outputs**:
 
-**SSH Hostname:** Esse é o **public_ip** de nossa EC2.
-
-**SSH Username:** É o usuario da nossa EC2, por padrão, é **ubuntu**
-
-**SSH Key File:** Aqui devemos referenciar nosso arquivo de chaves criado anteriormente (**Importante:** referencie a chave privada e não a pública!)
-
-**MySQL Hostname:** É o **endpoint** dos nossos outputs!
-
-**MySQL Server Port:** Porta usada para acessar o servidor, por padrão deve ser 3306.
+**Port:** Porta usada para acessar os serviços, nós declaramos na conexão SSM que é a porta **8001**.
 
 **Username:** É o *username* escolhido na criação de nossa base RDS, no meu caso, é **admin**.
 
@@ -482,7 +499,6 @@ Concluindo, sua janela deve estar de forma semelhante a esta:
 
 
 Por fim, basta clicar *Test Connection*, talvez apareça um warning, mas basta confiar na conexão, e então uma mensagem de sucesso irá aparecer na tela, feito isso basta clicar *Ok* e a sua conexão irá aparecer no seu dashboard:
-
 
 ![Conexão criada](/imgs/mysql-final.png)
 
@@ -503,6 +519,3 @@ https://medium.com/strategio/using-terraform-to-create-aws-vpc-ec2-and-rds-insta
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/tutorial-connect-ec2-instance-to-rds-database.html 
 
 https://beabetterdev.com/2022/12/13/how-to-connect-to-an-rds-or-aurora-database-in-a-private-subnet/ 
-
-
-Aqui também criaremos um bloco de dados para conseguirmos encontrar facilmente quais as zonas disponíveis da AWS para nossa região definida no provider (*us-east-1*).
