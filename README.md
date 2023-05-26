@@ -1,9 +1,11 @@
 # Conexão do RDS da AWS com uma interface gráfica de base de dados
-**Projeto de Computação em Nuvem**
+**Projeto de Computação em Nuvem - 2023.1**
 
 **Aluno:** Eduardo Araujo Rodrigues da Cunha
 
 **Data:** 26/05/2023
+
+**Video rápido da implementação:** https://www.youtube.com/watch?v=mXAAN1L68Ls
 
 ## Sobre a implementação
 
