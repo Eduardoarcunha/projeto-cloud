@@ -115,18 +115,27 @@ Antes de explicar cada um dos arquivos terraform, aqui está a estrutura do proj
 
 Antes de iniciarmos a implementação da infraestrutura em si, devemos preparar nosso ambiente de trabalho, para isso, basta criarmos uma pasta projeto e um arquivo ***main&period;tf***.
 
-Neste arquivo, primeiramente iremos referenciar qual o nosso provider, além de passarmos nossas credenciais da AWS.
+Neste arquivo, primeiramente definimos a versão do terraform, e iremos referenciar qual o nosso provider, além de passarmos nossas credenciais da AWS.
 
 **Observação:** 
 *Não coloque diretamente suas credencias no código, existem maneiras melhores de referenciá-las no arquivo, como usando variáveis de ambiente. Em nosso caso, para o Windows, referenciando os arquivos de configuração do AWS CLI, e evitando a exposição de nossas credenciais, para o Linux, apenas configurar o AWS CLI deve funcionar. Se quiser ver como configurar esses arquivos dessa maneira, confira [este tutorial da Amazon](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).*
 
 ``` terraform
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+  }
+}
+
 provider "aws" {
   region = "${var.region}"
-
+  
   # Windows
-  shared_config_files      = ["C:/Users/eduar/.aws/config"]
-  shared_credentials_files = ["C:/Users/eduar/.aws/credentials"]
+  # shared_config_files      = ["C:/Users/eduar/.aws/config"]
+  # shared_credentials_files = ["C:/Users/eduar/.aws/credentials"]
 }
 ```
 
