@@ -19,9 +19,11 @@ Porém, o diferencial é que a conexão com a EC2 ocorrerá por meio da AWS Syst
 
 **2.** [Terraform](https://www.terraform.io/) instalado em sua máquina, que é uma ferramenta de software de infraestrutura como código (IaC).
 
-**3.** Para testarmos nossa conexão com a base, temos diferentes opções, neste tutorial 3 são englobadas, para cada uma é necessário um pré-requisito diferente, escolha a que atender melhor sua necessidade:
+**3.** Para realizarmos a conexão SSM, é **necessário** instalar o AWS CLI e também o plugin do Session Manager! Aqui os links dos tutoriais da Amazon para a instalação do [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) e do plugin do [Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html).
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**a. Terminal e MySQL Client:** Para nos conectarmos pelo terminal, é necessário ter o MySQL Client instalado, aqui estão os tutoriais para o [Windows](https://www.youtube.com/watch?v=nfDyFWIDWoQ) e [Linux](https://dev.mysql.com/doc/mysql-shell/8.0/en/mysql-shell-install-linux-quick.html).
+**4.** Para testarmos nossa conexão com a base, temos diferentes opções, neste tutorial 3 são englobadas, para cada uma é necessário um pré-requisito diferente, escolha a que atender melhor sua necessidade:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**a. Terminal e MySQL Client:** Para nos conectarmos pelo terminal, é necessário ter o MySQL Client instalado, aqui estão os tutoriais para o [Windows](https://www.youtube.com/watch?v=nfDyFWIDWoQ&t=435s) e [Linux](https://dev.mysql.com/doc/mysql-shell/8.0/en/mysql-shell-install-linux-quick.html).
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**b. Python:** Temos no repositório, um arquivo *notebook* que testa a conexão para a base, para este teste, é necessário, além do python, o seguinte pacote:
 
