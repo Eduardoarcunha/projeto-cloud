@@ -9,6 +9,8 @@
 
 Este roteiro tem como objetivo conectar uma interface gráfica de banco de dados, por exemplo o MySQL Workbench, com um banco de dados [RDS](https://aws.amazon.com/pt/rds/) que é um serviço da amazon de banco de dados relacionais. 
 
+![](imgs/diagrama.png)
+
 A infraestrutura consiste em uma EC2 atuando como JumpBox para a base RDS, isso possibilita no futuro, configurações de conexões mais seguras, uma vez que não é possível conectar-se diretamente a base de dados.
 
 Porém, o diferencial é que a conexão com a EC2 ocorrerá por meio da AWS Systems Manager Session Manager (SSM), que é uma ferramenta de conexão mais segura, e que dentre várias vantagens que a ferramenta oferece, uma delas é que não é necessário um *key-pair* para nos conectarmos a uma instância EC2.
@@ -23,7 +25,7 @@ Porém, o diferencial é que a conexão com a EC2 ocorrerá por meio da AWS Syst
 
 **4.** Para testarmos nossa conexão com a base, temos diferentes opções, neste tutorial 3 são englobadas, para cada uma é necessário um pré-requisito diferente, escolha a que atender melhor sua necessidade:
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**a. Terminal e MySQL Client:** Para nos conectarmos pelo terminal, é necessário ter o MySQL Client instalado, aqui estão os tutoriais para o [Windows](https://www.youtube.com/watch?v=nfDyFWIDWoQ&t=435s) e [Linux](https://dev.mysql.com/doc/mysql-shell/8.0/en/mysql-shell-install-linux-quick.html).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**a. Terminal e MySQL Client:** Para nos conectarmos pelo terminal, é necessário ter o MySQL Client instalado, aqui estão os tutoriais para o [Windows](https://www.youtube.com/watch?v=nfDyFWIDWoQ&t=435s) e [Linux](https://phoenixnap.com/kb/install-mysql-ubuntu-20-04).
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**b. Python:** Temos no repositório, um arquivo *notebook* que testa a conexão para a base, para este teste, é necessário, além do python, o seguinte pacote:
 
@@ -46,6 +48,8 @@ terraform init
 
 Feito isso, o terraform estará corretamente inicializado no diretório, e podemos subir a infraestrutura, ao rodar o próximo comando, será perguntado se você quer confirmar as mudanças, basta digitar ***yes*** (o processo de instalação pode demorar entre 5 a 8 minutos!):
 
+<span style="color:red"><span style="font-weight:700">IMPORTANTE:</span> Você talvez precisa colocar suas chaves da AWS se estiver no Windows, para isso, basta abrir o arquivo *main&period;tf* e configurar o caminho até o arquivo *.aws* em seu computador. No Linux, simplesmente configurar o AWS CLI deve ser o suficiente para conectar-se a sua conta AWS.
+
 ```
 terraform apply
 ```
@@ -58,7 +62,7 @@ Pronto! Feito isso, algumas variáveis devem ter aparecido em seu terminal, prec
 aws ssm start-session --region us-east-1 --target <INSTANCE_ID> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters host="<RDS_ENDPOINT>",portNumber="3306",localPortNumber="8001"
 ```
 
-Feito a conexão, é possível conectar-se a base de dados! Antes, para você saber eu declarei as seguintes credenciais para esse banco de dados:
+Feito a conexão, é possível conectar-se a base de dados! Antes, para você saber essas são as credenciais para esse banco de dados (se quiser mudá-las, basta modificar esses valores no arquivo *rds&period;tf*, destruir a infraestrutura e subi-la novamente):
 
 **User:** admin 
 **Password:** adminrds
@@ -80,6 +84,8 @@ A seguinte imagem deve aparecer:
 ![](/imgs/databases-terminal.png)
 
 ## Roteiro detalhado
+
+Esta secção cobre cada arquivo de nossa infraestrutura, detalhando um pouco mais o que estamos fazendo em cada um.
 
 ### Subdivisão dos arquivos:
 
@@ -112,15 +118,11 @@ Antes de iniciarmos a implementação da infraestrutura em si, devemos preparar 
 Neste arquivo, primeiramente iremos referenciar qual o nosso provider, além de passarmos nossas credenciais da AWS.
 
 **Observação:** 
-*Não coloque diretamente suas credencias no código, existem maneiras melhores de referenciá-las no arquivo, como usando variáveis de ambiente. Em nosso caso, referenciando os arquivos de configuração do AWS CLI como referência, e evitando a exposição de nossas credenciais. Se quiser ver como configurar esses arquivos dessa maneira, confira [este tutorial da Amazon](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).*
+*Não coloque diretamente suas credencias no código, existem maneiras melhores de referenciá-las no arquivo, como usando variáveis de ambiente. Em nosso caso, para o Windows, referenciando os arquivos de configuração do AWS CLI, e evitando a exposição de nossas credenciais, para o Linux, apenas configurar o AWS CLI deve funcionar. Se quiser ver como configurar esses arquivos dessa maneira, confira [este tutorial da Amazon](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).*
 
 ``` terraform
 provider "aws" {
   region = "${var.region}"
-
-  # Linux
-  # shared_config_files      = ["$HOME/.aws/config"]
-  # shared_credentials_files = ["$HOME/.aws/credentials"]
 
   # Windows
   shared_config_files      = ["C:/Users/eduar/.aws/config"]
